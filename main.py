@@ -42,10 +42,22 @@ class InstrumentClassification:
                             'Accompanied Violin': 2}
 
     def pre_process_metadata(self):
+        """
+        Method for preprocessing/filtering the metadata
+        :return:
+        :rtype:
+        """
         included_ensembles = ['Solo Piano', 'String Quartet', 'Accompanied Violin']
         self.df = self.df[self.df['ensemble'].isin(included_ensembles)]
 
     def get_features(self, wav_file):
+        """
+        Method for extracting sfft and mel spectrograms from a .wav file
+        :param wav_file:
+        :type wav_file:
+        :return:
+        :rtype:
+        """
 
         def padding(original_array, H, W):
             A = max(0, (H - original_array.shape[0])//2)
@@ -57,11 +69,13 @@ class InstrumentClassification:
 
         images = []
         for i in range(SLICES):
-
+            # Upload song segment
             offset = i*SONG_DURATION
 
             data, sampling_rate = librosa.load(wav_file, duration=SONG_DURATION, offset=offset)
             data, index = librosa.effects.trim(data)    # Trim preceding and trailing zeros
+
+            # Short Time Fourier Transform and Mel Spectrogram representation
             stft = padding(np.abs(librosa.stft(data, n_fft=255, hop_length=512)), FEATURE_HEIGHT, FEATURE_WIDTH)
             MFCC = padding(librosa.feature.mfcc(data, n_fft=255, hop_length=512, n_mfcc=FEATURE_HEIGHT), FEATURE_HEIGHT, FEATURE_WIDTH)
 
@@ -71,10 +85,22 @@ class InstrumentClassification:
         return images
 
     def get_label(self, song_id):
+        """
+        Method for extracting the ensemble encoding of the a given .wav file
+        :param song_id:
+        :type song_id:
+        :return:
+        :rtype:
+        """
 
         return self.df.loc[self.df['id'] == song_id, 'ensemble'].iloc[0]
 
     def normalize(self):
+        """
+        Method for normalizing data using MinMaxScaler
+        :return:
+        :rtype:
+        """
 
         scaler = MinMaxScaler()
 
@@ -88,6 +114,11 @@ class InstrumentClassification:
         self.y_test = np.array(self.y_test)
 
     def create_CNN(self):
+        """
+        Method for creating the convolutional neural network model
+        :return:
+        :rtype:
+        """
 
         input_shape = (128, FEATURE_WIDTH, 2)
 
@@ -106,6 +137,19 @@ class InstrumentClassification:
         return model
 
     def plot(self, loss, acc, val_loss, val_acc):
+        """
+        Method for plotting loss and accuracy for train and validation populations
+        :param loss:
+        :type loss:
+        :param acc:
+        :type acc:
+        :param val_loss:
+        :type val_loss:
+        :param val_acc:
+        :type val_acc:
+        :return:
+        :rtype:
+        """
 
         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 5))
 
@@ -127,6 +171,15 @@ class InstrumentClassification:
         plt.show()
 
     def display_mel_spec(self, wav_file, ensemble):
+        """
+        Method for displaying a mel spectrogram representation of a .wav file
+        :param wav_file:
+        :type wav_file:
+        :param ensemble:
+        :type ensemble:
+        :return:
+        :rtype:
+        """
 
         plt.figure(figsize=(10, 4))
 
@@ -151,6 +204,15 @@ class InstrumentClassification:
         plt.show()
 
     def display_stft(self, wav_file, ensemble):
+        """
+        Method for displaying a short time fourier transform representation of a .wav file
+        :param wav_file:
+        :type wav_file:
+        :param ensemble:
+        :type ensemble:
+        :return:
+        :rtype:
+        """
 
         def padding(original_array, H, W):
             A = max(0, (H - original_array.shape[0]) // 2)
@@ -172,6 +234,11 @@ class InstrumentClassification:
         plt.show()
 
     def display_demos(self):
+        """
+        Method used to display example spectrograms and fourier transforms
+        :return:
+        :rtype:
+        """
 
         piano_solo = "demo_data/1733.wav"
         string_quartet = "demo_data/1792.wav"
@@ -186,7 +253,13 @@ class InstrumentClassification:
         self.display_mel_spec(accompanied_violin, ensemble='Accompanied Violin')
 
     def run(self):
+        """
+        Primary method used to facilitate data processing, model creation, and plotting
+        :return:
+        :rtype:
+        """
 
+        # Filter dataset: include only desired ensemble types
         self.pre_process_metadata()
 
         for index, row in self.df.iterrows():
@@ -205,11 +278,6 @@ class InstrumentClassification:
                 else:
                     self.X_train.append(image)
                     self.y_train.append(label)
-
-        print(" X Test Data: {}".format(len(self.X_test)))
-        print(" X Train Data: {}".format(len(self.X_train)))
-        print(" Y Test Data: {}".format(len(self.y_test)))
-        print(" Y Train Data: {}".format(len(self.y_train)))
 
         # Normalize
         self.normalize()
